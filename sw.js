@@ -1,5 +1,6 @@
-// Offline support: serve the app from cache, refresh it in the background.
-const CACHE = "liftlog-v1";
+// Offline support. Pages load from the network first (so updates arrive right away)
+// and fall back to the cached copy when the gym has no signal.
+const CACHE = "liftlog-v2";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
@@ -10,11 +11,16 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  const isPage = e.request.mode === "navigate";
   e.respondWith(
     caches.open(CACHE).then(async (c) => {
       const hit = await c.match(e.request, { ignoreSearch: true });
-      const net = fetch(e.request).then((r) => { if (r && (r.ok || r.type === "opaque")) c.put(e.request, r.clone()); return r; }).catch(() => hit);
-      return hit || net;
+      const net = fetch(e.request).then((r) => {
+        if (r && (r.ok || r.type === "opaque")) c.put(e.request, r.clone());
+        return r;
+      });
+      if (isPage) return net.catch(() => hit || c.match("index.html"));
+      return hit ? (net.catch(() => {}), hit) : net.catch(() => hit);
     })
   );
 });
