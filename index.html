@@ -123,6 +123,11 @@ input:focus-visible, button:focus-visible, label:focus-within { outline: 2px sol
 
 /* Finish */
 .finish { margin-top: 18px; width: 100%; height: 58px; border: 0; border-radius: 14px; background: linear-gradient(160deg, #4be39b, #22b36d); color: #052315; font: 800 22px var(--display); letter-spacing: .05em; text-transform: uppercase; cursor: pointer; box-shadow: 0 10px 26px rgba(46,200,120,.3); }
+.confirm { margin-top: 18px; border-radius: 14px; padding: 16px; background: var(--surface-2); border: 1px solid var(--line); display: grid; gap: 12px; }
+.confirm p { margin: 0; font-weight: 600; }
+.c-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.c-btns button { height: 50px; border-radius: 12px; font: 700 15px var(--body); cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+#c-yes { background: linear-gradient(160deg, #4be39b, #22b36d); color: #052315; border: 0; }
 .summary { margin-top: 18px; border-radius: 16px; padding: 18px; background: linear-gradient(160deg, rgba(62,213,138,.18), rgba(79,125,255,.14)); border: 1px solid rgba(62,213,138,.35); display: grid; gap: 12px; }
 .summary h3 { margin: 0; font: 800 26px var(--display); text-transform: uppercase; letter-spacing: .03em; }
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
@@ -195,6 +200,13 @@ input:focus-visible, button:focus-visible, label:focus-within { outline: 2px sol
     <p class="sub" id="day-sub"></p>
     <div class="list" id="exercises"></div>
     <button type="button" class="finish" id="finish">Klar – avsluta dagen</button>
+    <div class="confirm" id="confirm" hidden>
+      <p>Är du säker? Passet sparas i Historik och appen går vidare till nästa dag.</p>
+      <div class="c-btns">
+        <button type="button" id="c-no">Nej, fortsätt träna</button>
+        <button type="button" id="c-yes">Ja, avsluta</button>
+      </div>
+    </div>
     <div class="summary" id="summary" hidden></div>
     <p class="tip">Skriv kg och reps för varje set. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
   </section>
@@ -328,7 +340,7 @@ function suggestedDay() {
   const s = sorted();
   const latest = s.find((x) => x.date < TODAY || x.done);
   if (!latest) return 1;
-  return latest.day >= 5 ? 1 : latest.day + 1;
+  return latest.day >= 6 ? 1 : latest.day + 1;
 }
 
 /* ---------- storage (this phone) ---------- */
@@ -350,7 +362,7 @@ function loadSessions() { sessions = Object.entries(readStore()).map(([id, d]) =
 function save() {
   saveTimer = null; dirty = false;
   const all = readStore();
-  const id = sid(cur.date, cur.day);
+  const id = cur._id;
   if (Object.keys(cur.exercises).length || cur.done) {
     const body = { date: cur.date, day: cur.day, exercises: cur.exercises, updatedAt: new Date().toISOString() };
     if (cur.startedAt) body.startedAt = cur.startedAt;
@@ -375,8 +387,7 @@ function renderDays() {
     const b = document.createElement("button");
     b.type = "button";
     b.setAttribute("aria-pressed", String(d === day));
-    const today = sessions.find((s) => s._id === sid(TODAY, d));
-    if (today && today.done) b.classList.add("done");
+    if (sessions.some((s) => s.date === TODAY && s.day === d && s.done)) b.classList.add("done");
     else if (d === next) b.classList.add("next");
     b.innerHTML = `Dag ${d}<small></small>`;
     b.querySelector("small").textContent = PLAN[d].name;
@@ -384,12 +395,19 @@ function renderDays() {
     $("days").appendChild(b);
   }
 }
-const clone = (s) => ({ date: s.date, day: s.day, startedAt: s.startedAt, done: !!s.done, finishedAt: s.finishedAt, exercises: JSON.parse(JSON.stringify(s.exercises || {})) });
+const clone = (s) => ({ _id: s._id, date: s.date, day: s.day, startedAt: s.startedAt, done: !!s.done, finishedAt: s.finishedAt, exercises: JSON.parse(JSON.stringify(s.exercises || {})) });
+function freeId(date, d) {
+  const taken = new Set(sessions.map((s) => s._id));
+  let id = sid(date, d), n = 2;
+  while (taken.has(id)) id = `${sid(date, d)}-${n++}`;
+  return id;
+}
 function selectDay(d) {
   flushSave();
   day = d;
-  const existing = sessions.find((s) => s._id === sid(TODAY, d));
-  cur = existing ? clone(existing) : { date: TODAY, day: d, exercises: {} };
+  // A finished session lives in History only; picking that day again starts a fresh one.
+  const open = sessions.find((s) => s.date === TODAY && s.day === d && !s.done);
+  cur = open ? clone(open) : { _id: freeId(TODAY, d), date: TODAY, day: d, exercises: {} };
   renderDays();
   renderLog();
 }
@@ -401,7 +419,7 @@ function renderLog() {
   $("day-sub").textContent = `${p.ex.length} övningar · vila ${restText(BETWEEN)} mellan övningarna`;
   const list = $("exercises");
   list.innerHTML = "";
-  const curId = sid(TODAY, day);
+  const curId = cur._id;
   for (const [id, name, sets, lo, hi, rest] of p.ex) {
     const last = lastFor(id, curId);
     const mine = setsOf(cur.exercises[id]);
@@ -549,12 +567,12 @@ function applyLock() {
   const done = !!cur.done;
   document.querySelectorAll("#exercises input, #exercises .warm").forEach((el) => (el.disabled = done));
   document.querySelectorAll("#exercises .ex").forEach((c) => c.classList.toggle("locked", done));
-  $("finish").hidden = done;
+  $("finish").hidden = done; $("confirm").hidden = true;
   $("summary").hidden = !done;
   if (done) renderSummary();
 }
 function renderSummary() {
-  const curId = sid(TODAY, day);
+  const curId = cur._id;
   let setsDone = 0, vol = 0, beaten = 0, exDone = 0;
   for (const [id] of PLAN[day].ex) {
     const s = setsOf(cur.exercises[id]);
@@ -582,11 +600,19 @@ function renderSummary() {
   }
   const re = document.createElement("button"); re.type = "button"; re.className = "reopen"; re.textContent = "Ändra passet";
   re.onclick = () => { cur.done = false; delete cur.finishedAt; save(); renderDays(); applyLock(); };
-  el.append(h, st, p, re);
+  const nx = document.createElement("button"); nx.type = "button"; nx.className = "reopen"; nx.textContent = `Gå till Dag ${suggestedDay()}`;
+  nx.onclick = () => { selectDay(suggestedDay()); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap"; row.append(re, nx);
+  el.append(h, st, p, row);
 }
 $("finish").onclick = () => {
-  const any = Object.keys(cur.exercises).length;
-  if (!any) { setStatus("Logga minst ett set innan du avslutar dagen.", true); return; }
+  if (!Object.keys(cur.exercises).length) { setStatus("Logga minst ett set innan du avslutar dagen.", true); return; }
+  $("finish").hidden = true; $("confirm").hidden = false;
+  $("confirm").scrollIntoView({ behavior: "smooth", block: "center" });
+};
+$("c-no").onclick = () => { $("confirm").hidden = true; $("finish").hidden = false; };
+$("c-yes").onclick = () => {
+  $("confirm").hidden = true;
   flushSave();
   cur.done = true; cur.finishedAt = new Date().toISOString();
   stopRest();
@@ -711,8 +737,8 @@ window.addEventListener("pagehide", flushSave);
 
 loadSessions();
 {
-  const todays = sorted().find((s) => s.date === TODAY && !s.done) || sorted().find((s) => s.date === TODAY);
-  selectDay(todays ? todays.day : suggestedDay());
+  const open = sorted().find((s) => s.date === TODAY && !s.done);
+  selectDay(open ? open.day : suggestedDay());
 }
 setStatus(storageOk ? `${sessions.length} pass sparade på telefonen` : "Kan inte spara. Stäng av privat läge i Safari.", !storageOk);
 
