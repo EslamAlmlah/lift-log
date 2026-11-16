@@ -1,6 +1,6 @@
 // Offline support. Pages load from the network first (so updates arrive right away)
 // and fall back to the cached copy when the gym has no signal.
-const CACHE = "liftlog-v3";
+const CACHE = "liftlog-v4";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
@@ -11,6 +11,9 @@ self.addEventListener("activate", (e) => {
 });
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  const u = new URL(e.request.url);
+  // Only the app itself and its fonts are cached; sync calls to GitHub always go to the network.
+  if (u.origin !== self.location.origin && !/fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)) return;
   const isPage = e.request.mode === "navigate";
   e.respondWith(
     caches.open(CACHE).then(async (c) => {

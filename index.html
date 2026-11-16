@@ -160,6 +160,21 @@ input:focus-visible, button:focus-visible, label:focus-within { outline: 2px sol
 .empty { color: var(--muted); font-size: 14px; padding: 12px 0; }
 .tools { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .tools button, .tools label { height: 40px; padding: 0 14px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font: 600 13px var(--body); cursor: pointer; display: inline-flex; align-items: center; }
+.weigh { background: linear-gradient(160deg, rgba(79,125,255,.18), rgba(20,28,48,.9)); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-top: 16px; display: grid; gap: 8px; }
+.w-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.w-lbl { font: 800 20px var(--display); text-transform: uppercase; letter-spacing: .03em; }
+.w-avg { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.w-avg b { color: var(--fg); }
+.w-in { display: flex; gap: 6px; }
+.w-in input { width: 84px; }
+.w-in button, .sync .tools button { height: 46px; padding: 0 14px; border-radius: 10px; border: 0; background: var(--accent); color: #fff; font: 700 14px var(--body); cursor: pointer; }
+.w-in button.ok { background: var(--good); color: #052315; }
+#w-spark { width: 100%; height: 54px; }
+.w-hint { font-size: 12px; color: var(--muted); }
+.sync { display: grid; gap: 6px; }
+.sync label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-weight: 600; }
+input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(--body); }
+.sync .tools button + button { background: var(--surface); border: 1px solid var(--line); color: var(--fg); }
 .tip { font-size: 12px; color: var(--muted); margin-top: 14px; line-height: 1.55; }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -196,6 +211,20 @@ input:focus-visible, button:focus-visible, label:focus-within { outline: 2px sol
   </div>
 
   <section id="view-log">
+    <div class="weigh" id="weigh">
+      <div class="w-head">
+        <div>
+          <div class="w-lbl">Vikt idag</div>
+          <div class="w-avg" id="w-avg"></div>
+        </div>
+        <div class="w-in">
+          <input id="w-kg" class="kg" inputmode="decimal" autocomplete="off" aria-label="Vikt i kg" placeholder="kg">
+          <button type="button" id="w-save">Spara</button>
+        </div>
+      </div>
+      <svg id="w-spark" viewBox="0 0 300 54" preserveAspectRatio="none" aria-hidden="true"></svg>
+      <div class="w-hint">Väg dig på morgonen efter toa, före frukost, utan kläder. Snittet per vecka är det som räknas.</div>
+    </div>
     <h2 id="day-title"></h2>
     <p class="sub" id="day-sub"></p>
     <div class="list" id="exercises"></div>
@@ -220,6 +249,22 @@ input:focus-visible, button:focus-visible, label:focus-within { outline: 2px sol
       <label for="import">Återställ backup<input type="file" id="import" accept="application/json,.json" hidden></label>
     </div>
     <p class="tip">Allt sparas på den här telefonen. Gör en backup ibland (den hamnar i Filer), så kan du läsa in den på en ny telefon.</p>
+
+    <h2>Vikt</h2>
+    <div class="list" id="w-hist"></div>
+
+    <h2>Synk med Claude</h2>
+    <div class="sync">
+      <p class="sub" id="sync-state"></p>
+      <label for="sync-repo">Repo</label>
+      <input id="sync-repo" class="wide" autocomplete="off" autocapitalize="off" spellcheck="false" value="EslamAlmlah/lift-log-data">
+      <label for="sync-token">GitHub-token</label>
+      <input id="sync-token" class="wide" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="github_pat_…">
+      <div class="tools">
+        <button type="button" id="sync-save">Koppla och synka nu</button>
+        <button type="button" id="sync-off">Koppla från</button>
+      </div>
+    </div>
   </section>
 </div>
 
@@ -370,7 +415,7 @@ function save() {
     all[id] = body;
   } else delete all[id];
   if (writeStore(all)) {
-    loadSessions();
+    loadSessions(); queueSync();
     setStatus(`Sparat ${new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })}`);
   } else {
     dirty = true;
@@ -702,13 +747,123 @@ function showTab(which) {
   $("tab-log").setAttribute("aria-selected", String(log));
   $("tab-hist").setAttribute("aria-selected", String(!log));
   $("view-log").hidden = !log; $("view-hist").hidden = log;
-  if (!log) renderHistory();
+  if (!log) { renderHistory(); renderWeightHistory(); }
 }
 $("tab-log").onclick = () => showTab("log");
 $("tab-hist").onclick = () => showTab("hist");
 
+/* ---------- body weight ---------- */
+const WKEY = "liftlog.weights.v1";
+const WSEED = { "2026-11-15": { kg: 85.1, note: "påklädd, efter träning" }, "2026-11-16": { kg: 83.5, note: "naken, efter frukost" } };
+function readWeights() {
+  try {
+    const raw = localStorage.getItem(WKEY);
+    if (raw === null) { localStorage.setItem(WKEY, JSON.stringify(WSEED)); return JSON.parse(JSON.stringify(WSEED)); }
+    return JSON.parse(raw) || {};
+  } catch { return {}; }
+}
+function writeWeights(w) { try { localStorage.setItem(WKEY, JSON.stringify(w)); return true; } catch { return false; } }
+const fmtKg = (n) => n.toFixed(1).replace(".", ",");
+function avgBetween(w, from, to) {
+  const v = Object.entries(w).filter(([d]) => d >= from && d <= to).map(([, x]) => x.kg);
+  return v.length ? { avg: v.reduce((a, b) => a + b, 0) / v.length, n: v.length } : null;
+}
+function shiftIso(iso, days) { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + days); return isoOf(d); }
+function renderWeight() {
+  const w = readWeights();
+  if (w[TODAY] && document.activeElement !== $("w-kg")) $("w-kg").value = String(w[TODAY].kg).replace(".", ",");
+  const thisWk = avgBetween(w, shiftIso(TODAY, -6), TODAY);
+  const lastWk = avgBetween(w, shiftIso(TODAY, -13), shiftIso(TODAY, -7));
+  let t = thisWk ? `Snitt 7 dagar: <b>${fmtKg(thisWk.avg)} kg</b> (${thisWk.n} vägn.)` : "Ingen vägning än";
+  if (thisWk && lastWk) { const d = thisWk.avg - lastWk.avg; t += ` · ${d <= 0 ? "▼" : "▲"} ${fmtKg(Math.abs(d))} mot förra veckan`; }
+  $("w-avg").innerHTML = t;
+  // Sparkline of the last 30 days.
+  const pts = Object.entries(w).filter(([d]) => d >= shiftIso(TODAY, -29)).sort(([a], [b]) => a.localeCompare(b));
+  const svg = $("w-spark");
+  if (pts.length < 2) { svg.innerHTML = ""; return; }
+  const ks = pts.map(([, x]) => x.kg), lo = Math.min(...ks) - 0.5, hi = Math.max(...ks) + 0.5;
+  const t0 = new Date(pts[0][0]).getTime(), t1 = new Date(pts[pts.length - 1][0]).getTime() || t0 + 1;
+  const xy = pts.map(([d, x]) => [6 + (288 * (new Date(d).getTime() - t0)) / Math.max(1, t1 - t0), 6 + (42 * (hi - x.kg)) / (hi - lo)]);
+  const line = xy.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const [ex, ey] = xy[xy.length - 1];
+  svg.innerHTML = `<path d="${line} L${ex.toFixed(1)},54 L${xy[0][0].toFixed(1)},54 Z" fill="rgba(79,125,255,.18)"/><path d="${line}" fill="none" stroke="#7aa0ff" stroke-width="2" vector-effect="non-scaling-stroke"/><circle cx="${ex}" cy="${ey}" r="3.5" fill="#fff"/>`;
+}
+function renderWeightHistory() {
+  const w = readWeights(); const h = $("w-hist"); h.innerHTML = "";
+  const rows = Object.entries(w).sort(([a], [b]) => b.localeCompare(a));
+  if (!rows.length) { h.innerHTML = `<div class="empty">Inga vägningar än.</div>`; return; }
+  const box = document.createElement("div"); box.className = "sess";
+  const ul = document.createElement("ul");
+  for (const [d, x] of rows.slice(0, 60)) {
+    const li = document.createElement("li");
+    const a = document.createElement("span"); a.textContent = fmtDate(d) + (x.note ? ` · ${x.note}` : "");
+    const b = document.createElement("span"); b.textContent = `${fmtKg(x.kg)} kg`;
+    li.append(a, b); ul.appendChild(li);
+  }
+  box.appendChild(ul); h.appendChild(box);
+}
+$("w-save").onclick = () => {
+  const v = Number($("w-kg").value.trim().replace(",", "."));
+  if (!(v > 30 && v < 250)) { setStatus("Skriv vikten i kg, till exempel 83,5.", true); return; }
+  const w = readWeights();
+  w[TODAY] = { kg: Math.round(v * 10) / 10 };
+  writeWeights(w); renderWeight(); $("w-kg").blur();
+  $("w-save").textContent = "Sparat ✓"; $("w-save").classList.add("ok");
+  setTimeout(() => { $("w-save").textContent = "Spara"; $("w-save").classList.remove("ok"); }, 1800);
+  queueSync();
+};
+$("w-kg").addEventListener("keydown", (e) => { if (e.key === "Enter") $("w-save").click(); });
+
+/* ---------- sync to a private GitHub repo, so Claude can read the data ---------- */
+const SKEY = "liftlog.sync.v1";
+let syncTimer = null, syncing = false;
+function syncCfg() { try { return JSON.parse(localStorage.getItem(SKEY)) || null; } catch { return null; } }
+function setSyncState(t, err) { $("sync-state").textContent = t; $("sync-state").style.color = err ? "var(--warn)" : ""; }
+const b64 = (str) => btoa(unescape(encodeURIComponent(str)));
+const unb64 = (str) => decodeURIComponent(escape(atob(str.replace(/\s/g, ""))));
+function queueSync() { if (!syncCfg()) return; clearTimeout(syncTimer); syncTimer = setTimeout(syncNow, 1500); }
+async function syncNow() {
+  const cfg = syncCfg();
+  if (!cfg || syncing) return;
+  if (!navigator.onLine) { setSyncState("Ingen uppkoppling. Synkar när du har nät igen."); return; }
+  syncing = true;
+  const url = `https://api.github.com/repos/${cfg.repo}/contents/data.json`;
+  const headers = { Authorization: `Bearer ${cfg.token}`, Accept: "application/vnd.github+json" };
+  try {
+    let sha, remote = null;
+    const g = await fetch(url, { headers, cache: "no-store" });
+    if (g.status === 200) { const j = await g.json(); sha = j.sha; try { remote = JSON.parse(unb64(j.content)); } catch {} }
+    else if (g.status !== 404) throw new Error(g.status === 401 ? "Fel token" : g.status === 403 ? "Token saknar behörighet" : `GitHub svarade ${g.status}`);
+    // Merge: the newest copy of each session wins; local weights win for the same date.
+    const local = readStore(), lw = readWeights();
+    if (remote) {
+      for (const [id, s] of Object.entries(remote.sessions || {})) if (!local[id] || (s.updatedAt || "") > (local[id].updatedAt || "")) local[id] = s;
+      for (const [d, x] of Object.entries(remote.weights || {})) if (!lw[d]) lw[d] = x;
+      writeStore(local); writeWeights(lw); loadSessions();
+    }
+    const body = { app: "lift-log", updatedAt: new Date().toISOString(), weights: lw, sessions: local };
+    const p = await fetch(url, { method: "PUT", headers, body: JSON.stringify({ message: `Lift Log sync ${TODAY}`, content: b64(JSON.stringify(body, null, 1)), sha }) });
+    if (!p.ok) throw new Error(p.status === 409 ? "Krock, försöker igen snart" : `GitHub svarade ${p.status}`);
+    setSyncState(`Synkat ${new Date().toLocaleTimeString("sv-SE", { hour: "2-digit", minute: "2-digit" })} till ${cfg.repo}. Claude kan läsa det.`);
+  } catch (e) {
+    setSyncState(`Synken misslyckades: ${e.message || "okänt fel"}.`, true);
+  } finally { syncing = false; }
+}
+$("sync-save").onclick = () => {
+  const repo = $("sync-repo").value.trim(), token = $("sync-token").value.trim() || (syncCfg() || {}).token;
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo) || !token) { setSyncState("Fyll i repo (namn/repo) och token.", true); return; }
+  try { localStorage.setItem(SKEY, JSON.stringify({ repo, token })); } catch {}
+  $("sync-token").value = ""; setSyncState("Synkar…"); syncNow();
+};
+$("sync-off").onclick = () => { try { localStorage.removeItem(SKEY); } catch {} setSyncState("Inte kopplad. Datan finns bara på telefonen."); };
+{
+  const c = syncCfg();
+  if (c) { $("sync-repo").value = c.repo; $("sync-token").placeholder = "Sparad ✓ (skriv ny för att byta)"; setSyncState(`Kopplad till ${c.repo}.`); }
+  else setSyncState("Inte kopplad. Datan finns bara på telefonen.");
+}
+
 $("export").onclick = () => {
-  const blob = new Blob([JSON.stringify(readStore(), null, 1)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify({ sessions: readStore(), weights: readWeights() }, null, 1)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = `lift-log-backup-${TODAY}.json`;
@@ -721,15 +876,20 @@ $("import").onchange = async (e) => {
   try {
     const data = JSON.parse(await f.text());
     if (!data || typeof data !== "object" || Array.isArray(data)) throw new Error();
-    writeStore({ ...readStore(), ...data }); loadSessions();
+    if (data.sessions || data.weights) {
+      writeStore({ ...readStore(), ...(data.sessions || {}) });
+      writeWeights({ ...readWeights(), ...(data.weights || {}) });
+    } else writeStore({ ...readStore(), ...data });
+    loadSessions(); renderWeight();
     selectDay(day); renderHistory();
-    setStatus(`Återställde ${Object.keys(data).length} pass`);
+    setStatus("Backup återställd");
   } catch { setStatus("Den filen är ingen Lift Log-backup.", true); }
   e.target.value = "";
 };
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState !== "visible") { flushSave(); return; }
+  syncNow();
   if (isoOf(new Date()) !== TODAY) location.reload();
   if (restTick) tickRest();
 });
@@ -741,6 +901,10 @@ loadSessions();
   selectDay(open ? open.day : suggestedDay());
 }
 setStatus(storageOk ? `${sessions.length} pass sparade på telefonen` : "Kan inte spara. Stäng av privat läge i Safari.", !storageOk);
+
+renderWeight();
+syncNow();
+window.addEventListener("online", syncNow);
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
