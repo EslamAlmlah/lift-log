@@ -93,6 +93,11 @@ h2 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
 .ex { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); border-radius: 14px; padding: 14px; display: grid; gap: 10px; }
 .ex-head { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
 .ex-name { font-weight: 700; font-size: 16px; min-width: 0; }
+.skip { flex: none; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: none; color: var(--muted); font: 600 12px var(--body); cursor: pointer; }
+.ex.skipped { opacity: .7; background: var(--surface); border-style: dashed; }
+.skip-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.add.danger { color: var(--bad); border-color: rgba(255,93,108,.45); }
+.locked .skip { display: none; }
 .tags { display: flex; gap: 6px; flex-wrap: wrap; }
 .tag { font: 700 14px var(--display); letter-spacing: .03em; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
 .tag.target { color: var(--accent-2); background: var(--accent-soft); }
@@ -253,6 +258,11 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
     <h2>Vikt</h2>
     <div class="list" id="w-hist"></div>
 
+    <div id="hidden-box" hidden>
+      <h2>Borttagna övningar</h2>
+      <div class="list" id="hidden-list"></div>
+    </div>
+
     <h2>Synk med Claude</h2>
     <div class="sync">
       <p class="sub" id="sync-state"></p>
@@ -305,6 +315,7 @@ const PLAN = {
     ["leg-press", "Leg press", 2, 10, 15, 120],
     ["leg-curl", "Leg curl", 3, 10, 15, SMALL],
     ["calf-raise", "Calf raise", 3, 10, 15, 60],
+    ["adductor", "Adductor machine", 3, 10, 15, 60],
   ]},
   4: { name: "Axlar + armar", focus: "axlar", ex: [
     ["seated-db-press", "Seated dumbbell shoulder press", 3, 6, 10, BIG],
@@ -408,9 +419,10 @@ function save() {
   saveTimer = null; dirty = false;
   const all = readStore();
   const id = cur._id;
-  if (Object.keys(cur.exercises).length || cur.done) {
+  if (Object.keys(cur.exercises).length || cur.done || (cur.skipped || []).length) {
     const body = { date: cur.date, day: cur.day, exercises: cur.exercises, updatedAt: new Date().toISOString() };
     if (cur.startedAt) body.startedAt = cur.startedAt;
+    if ((cur.skipped || []).length) body.skipped = cur.skipped;
     if (cur.done) { body.done = true; body.finishedAt = cur.finishedAt; }
     all[id] = body;
   } else delete all[id];
@@ -440,7 +452,7 @@ function renderDays() {
     $("days").appendChild(b);
   }
 }
-const clone = (s) => ({ _id: s._id, date: s.date, day: s.day, startedAt: s.startedAt, done: !!s.done, finishedAt: s.finishedAt, exercises: JSON.parse(JSON.stringify(s.exercises || {})) });
+const clone = (s) => ({ _id: s._id, date: s.date, day: s.day, startedAt: s.startedAt, done: !!s.done, finishedAt: s.finishedAt, skipped: [...(s.skipped || [])], exercises: JSON.parse(JSON.stringify(s.exercises || {})) });
 function freeId(date, d) {
   const taken = new Set(sessions.map((s) => s._id));
   let id = sid(date, d), n = 2;
@@ -458,14 +470,45 @@ function selectDay(d) {
 }
 
 /* ---------- log ---------- */
+/* Exercises removed from the program for good, as "day:id". */
+const HKEY = "liftlog.hidden.v1";
+function readHidden() { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch { return []; } }
+function writeHidden(h) { try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch {} }
+const planFor = (d) => PLAN[d].ex.filter(([id]) => !readHidden().includes(`${d}:${id}`));
+
+function skippedCard(id, name) {
+  const card = document.createElement("div");
+  card.className = "ex skipped"; card.dataset.id = id; card._skipped = true; card._name = name;
+  const head = document.createElement("div"); head.className = "ex-head";
+  const nm = document.createElement("div"); nm.className = "ex-name"; nm.textContent = name;
+  const tag = document.createElement("span"); tag.className = "tag rest"; tag.textContent = "Hoppas över idag";
+  head.append(nm, tag);
+  const btns = document.createElement("div"); btns.className = "skip-btns";
+  const undo = document.createElement("button"); undo.type = "button"; undo.className = "add"; undo.textContent = "Ångra";
+  undo.onclick = () => { cur.skipped = (cur.skipped || []).filter((x) => x !== id); markDirty(); renderLog(); };
+  const rm = document.createElement("button"); rm.type = "button"; rm.className = "add danger"; rm.textContent = "Ta bort från programmet";
+  rm.onclick = () => {
+    if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Säker? Tryck igen"; return; }
+    writeHidden([...readHidden(), `${day}:${id}`]);
+    cur.skipped = (cur.skipped || []).filter((x) => x !== id); markDirty(); renderLog();
+    setStatus(`${name} är borttagen från Dag ${day}. Du kan få tillbaka den under Historik.`);
+  };
+  btns.append(undo, rm);
+  card.append(head, btns);
+  return card;
+}
+function markDirty() { dirty = true; clearTimeout(saveTimer); saveTimer = setTimeout(save, 300); }
+
 function renderLog() {
   const p = PLAN[day];
+  const exs = planFor(day);
   $("day-title").textContent = `Dag ${day} · ${p.name}`;
-  $("day-sub").textContent = `${p.ex.length} övningar · vila ${restText(BETWEEN)} mellan övningarna`;
+  $("day-sub").textContent = `${exs.length} övningar · vila ${restText(BETWEEN)} mellan övningarna`;
   const list = $("exercises");
   list.innerHTML = "";
   const curId = cur._id;
-  for (const [id, name, sets, lo, hi, rest] of p.ex) {
+  for (const [id, name, sets, lo, hi, rest] of exs) {
+    if ((cur.skipped || []).includes(id) && !cur.exercises[id]) { list.appendChild(skippedCard(id, name)); continue; }
     const last = lastFor(id, curId);
     const mine = setsOf(cur.exercises[id]);
     const card = document.createElement("div");
@@ -475,7 +518,13 @@ function renderLog() {
 
     const head = document.createElement("div"); head.className = "ex-head";
     const nm = document.createElement("div"); nm.className = "ex-name"; nm.textContent = name;
-    head.appendChild(nm);
+    const sk = document.createElement("button"); sk.type = "button"; sk.className = "skip"; sk.textContent = "Hoppa över";
+    sk.title = "Maskinen upptagen eller trasig? Hoppa över den idag.";
+    sk.onclick = () => {
+      if (cur.exercises[id]) { setStatus("Ta bort dina set först om du vill hoppa över övningen.", true); return; }
+      cur.skipped = [...new Set([...(cur.skipped || []), id])]; markDirty(); renderLog();
+    };
+    head.append(nm, sk);
     const tags = document.createElement("div"); tags.className = "tags";
     const tg = document.createElement("span"); tg.className = "tag target"; tg.textContent = `${sets} set × ${lo === hi ? hi : lo + "–" + hi} reps`;
     const rs = document.createElement("span"); rs.className = "tag rest"; rs.textContent = rest ? `Vila ${restText(rest)}` : "Direkt till nästa (superset)";
@@ -677,7 +726,7 @@ function startRestFor(card, input) {
   if (rows[idx] && rows[idx].classList.contains("is-warm")) { secs = Math.min(secs || 60, 60); label = "Vila efter uppvärmning"; }
   else if (lastSet) {
     const cards = [...document.querySelectorAll("#exercises .ex")];
-    const next = cards[cards.indexOf(card) + 1];
+    const next = cards.slice(cards.indexOf(card) + 1).find((c) => !c._skipped);
     if (!next) { label = "Sista övningen klar – tryck Klar – avsluta dagen"; secs = 0; }
     else { secs = Math.max(BETWEEN, card._rest || 0); label = `Vila, sen ${next._name}`; }
   } else label = `Vila till set ${idx + 2} · ${card._name}`;
@@ -747,7 +796,21 @@ function showTab(which) {
   $("tab-log").setAttribute("aria-selected", String(log));
   $("tab-hist").setAttribute("aria-selected", String(!log));
   $("view-log").hidden = !log; $("view-hist").hidden = log;
-  if (!log) { renderHistory(); renderWeightHistory(); }
+  if (!log) { renderHistory(); renderWeightHistory(); renderHidden(); }
+}
+function renderHidden() {
+  const h = readHidden(), box = $("hidden-list");
+  $("hidden-box").hidden = !h.length; box.innerHTML = "";
+  for (const key of h) {
+    const [d, id] = key.split(":");
+    const ex = PLAN[d] && PLAN[d].ex.find((e) => e[0] === id);
+    const row = document.createElement("div"); row.className = "sess";
+    const t = document.createElement("div"); t.className = "ex-head";
+    const n = document.createElement("div"); n.className = "ex-name"; n.textContent = `${ex ? ex[1] : id} · Dag ${d}`;
+    const b = document.createElement("button"); b.type = "button"; b.className = "skip"; b.textContent = "Lägg tillbaka";
+    b.onclick = () => { writeHidden(readHidden().filter((k) => k !== key)); renderHidden(); if (+d === day) renderLog(); };
+    t.append(n, b); row.appendChild(t); box.appendChild(row);
+  }
 }
 $("tab-log").onclick = () => showTab("log");
 $("tab-hist").onclick = () => showTab("hist");
