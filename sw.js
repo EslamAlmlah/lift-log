@@ -1,6 +1,6 @@
 // Offline support. Pages load from the network first (so updates arrive right away)
 // and fall back to the cached copy when the gym has no signal.
-const CACHE = "liftlog-v7";
+const CACHE = "liftlog-v8";
 const SHELL = ["./", "index.html", "manifest.webmanifest", "icons/icon-192.png", "icons/apple-touch-icon.png"];
 
 self.addEventListener("install", (e) => {
