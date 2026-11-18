@@ -242,7 +242,7 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
       </div>
     </div>
     <div class="summary" id="summary" hidden></div>
-    <p class="tip">Skriv kg och reps för varje set. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
+    <p class="tip">Uppvärmningsset räknas inte, de är extra. Kör sista setet nära failure, med 1–2 reps kvar. Skriv kg och reps för varje set. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
   </section>
 
   <section id="view-hist" hidden>
@@ -299,7 +299,7 @@ const PLAN = {
     ["incline-db-press", "Incline dumbbell press", 3, 6, 10, BIG],
     ["flat-chest-press", "Flat bench or machine chest press", 3, 6, 10, BIG],
     ["pec-deck", "Pec deck fly", 3, 10, 15, SMALL],
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 4, 12, 20, SMALL],
+    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 12, 20, SMALL],
     ["oh-cable-tri", "Overhead cable triceps extension", 3, 10, 15, SMALL],
   ]},
   2: { name: "Pull", focus: "lats", ex: [
@@ -310,35 +310,35 @@ const PLAN = {
     ["incline-db-curl", "Incline dumbbell curl", 3, 8, 12, SMALL],
   ]},
   3: { name: "Ben", focus: "ben", ex: [
-    ["hack-squat", "Hack squat or squat", 3, 6, 10, BIG],
-    ["rdl", "Romanian deadlift", 3, 8, 10, BIG],
+    ["hack-squat", "Hack squat or squat", 2, 6, 10, BIG],
+    ["rdl", "Romanian deadlift", 2, 8, 10, BIG],
     ["leg-press", "Leg press", 2, 10, 15, 120],
-    ["leg-curl", "Leg curl", 3, 10, 15, SMALL],
-    ["adductor", "Adductor machine (full ROM, långsam negativ)", 3, 10, 15, 60],
+    ["leg-curl", "Leg curl", 2, 10, 15, SMALL],
+    ["adductor", "Adductor machine (full ROM, långsam negativ)", 2, 10, 15, 60],
   ]},
   4: { name: "Axlar + armar", focus: "axlar", ex: [
     ["machine-shoulder-press", "Machine shoulder press", 3, 6, 10, BIG],
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 4, 12, 20, SMALL],
+    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 12, 20, SMALL],
     ["reverse-pec-deck", "Reverse pec deck", 3, 15, 20, 60],
     ["ez-21s", "EZ-bar 21s (7 nere, 7 uppe, 7 hela)", 3, 21, 21, 90],
     ["tri-pushdown", "Triceps pushdown", 3, 10, 15, SMALL],
-    ["hammer-curl", "Hammer curl", 2, 10, 12, SMALL],
+    ["hammer-curl", "Hammer curl", 3, 10, 12, SMALL],
   ]},
   5: { name: "Överkropp", focus: "överkropp", ex: [
     ["weighted-pullup", "Weighted pull-up or pulldown", 3, 6, 10, BIG],
     ["machine-chest-press", "Machine chest press", 3, 8, 12, BIG],
     ["seated-cable-row", "Seated cable row", 3, 10, 12, 120],
-    ["pec-deck", "Pec deck fly", 2, 12, 15, SMALL],
+    ["pec-deck", "Pec deck fly", 3, 12, 15, SMALL],
     ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 15, 20, SMALL],
-    ["ss-curl", "Curl (superset)", 2, 12, 12, 0],
-    ["ss-pushdown", "Pushdown (superset)", 2, 12, 12, 90],
+    ["ss-curl", "Curl (superset)", 3, 12, 12, 0],
+    ["ss-pushdown", "Pushdown (superset)", 3, 12, 12, 90],
   ]},
   6: { name: "Pump", focus: "valfri", ex: [
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 4, 12, 20, 60],
+    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 12, 20, 60],
     ["preacher-curl", "Preacher curl or EZ-bar 21s", 3, 12, 20, 60],
     ["oh-tri-ext", "Overhead triceps extension", 3, 12, 20, 60],
-    ["rear-delt-fly", "Rear delt fly", 2, 12, 20, 60],
-    ["pec-deck", "Pec deck fly", 2, 12, 20, 60],
+    ["rear-delt-fly", "Rear delt fly", 3, 12, 20, 60],
+    ["pec-deck", "Pec deck fly", 3, 12, 20, 60],
   ]},
 };
 
@@ -550,7 +550,7 @@ function renderLog() {
 
     const grid = document.createElement("div"); grid.className = "sets";
     const lastN = last ? last.sets.filter((s) => s.reps > 0).length : 0;
-    const n = mine.length ? mine.length : Math.max(sets, lastN);
+    const n = mine.length ? mine.length : sets;
     for (let i = 0; i < n; i++) grid.appendChild(setRow(card, i, mine[i], last && last.sets[i]));
     const add = document.createElement("button");
     add.type = "button"; add.className = "add"; add.textContent = "+ Lägg till set";
