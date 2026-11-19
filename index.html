@@ -107,6 +107,7 @@ h2 { font-family: var(--display); font-weight: 800; font-size: 26px; text-transf
 .chip { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .chip.up { background: var(--warn-soft); color: var(--warn); }
 .chip.beat { background: var(--accent-soft); color: var(--accent-2); }
+.chip.pr { background: rgba(247, 196, 58, 0.18); color: #f7c43a; }
 .chip.won { background: var(--good-soft); color: var(--good); }
 
 .sets { display: grid; gap: 6px; }
@@ -242,7 +243,7 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
       </div>
     </div>
     <div class="summary" id="summary" hidden></div>
-    <p class="tip">Uppvärmningsset räknas inte, de är extra. Kör sista setet nära failure, med 1–2 reps kvar. Skriv kg och reps för varje set. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
+    <p class="tip">Uppvärmningsset räknas inte, de är extra. Kör sista setet nära failure, med 1–2 reps kvar. Skriv kg och reps för varje set. PR är ditt tyngsta set någonsin på övningen. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
   </section>
 
   <section id="view-hist" hidden>
@@ -391,6 +392,25 @@ function lastFor(exId, excludeId) {
   }
   return null;
 }
+// Personal record: heaviest working set ever (more reps wins a tie). Bodyweight sets compare on reps.
+const better = (a, b) => {
+  const ak = a.kg > 0 ? a.kg : 0, bk = b.kg > 0 ? b.kg : 0;
+  return ak > bk || (ak === bk && a.reps > b.reps);
+};
+function bestSet(sets) {
+  let best = null;
+  for (const x of work(sets)) if (!best || better(x, best)) best = x;
+  return best;
+}
+function prFor(exId, excludeId) {
+  let pr = null;
+  for (const s of sorted()) {
+    if (s._id === excludeId) continue;
+    const b = bestSet(setsOf(s.exercises && s.exercises[exId]));
+    if (b && (!pr || better(b, pr.set) || (!better(pr.set, b) && s.date < pr.date))) pr = { set: b, date: s.date };
+  }
+  return pr;
+}
 function suggestedDay() {
   const s = sorted();
   const latest = s.find((x) => x.date < TODAY || x.done);
@@ -513,7 +533,8 @@ function renderLog() {
     const card = document.createElement("div");
     card.className = "ex";
     card.dataset.id = id;
-    Object.assign(card, { _last: last, _sets: sets, _hi: hi, _rest: rest, _name: name });
+    const pr = prFor(id, curId);
+    Object.assign(card, { _pr: pr, _last: last, _sets: sets, _hi: hi, _rest: rest, _name: name });
 
     const head = document.createElement("div"); head.className = "ex-head";
     const nm = document.createElement("div"); nm.className = "ex-name"; nm.textContent = name;
@@ -531,11 +552,13 @@ function renderLog() {
 
     const lastEl = document.createElement("div"); lastEl.className = "last";
     if (last) {
-      const t = document.createElement("span");
-      t.innerHTML = `Förra: <b></b> <span class="d"></span>`;
-      t.querySelector("b").textContent = last.sets.filter((s) => s.reps > 0).map(setText).join(", ");
-      t.querySelector(".d").textContent = `(${fmtDate(last.date)})`;
-      lastEl.appendChild(t);
+      if (pr) {
+        const t = document.createElement("span");
+        t.innerHTML = `PR: <b></b> <span class="d"></span>`;
+        t.querySelector("b").textContent = `${pr.set.kg > 0 ? pr.set.kg + " kg" : "BW"} × ${pr.set.reps}`;
+        t.querySelector(".d").textContent = `(${fmtDate(pr.date)})`;
+        lastEl.appendChild(t);
+      }
       const w = work(last.sets);
       const allTop = w.length >= sets && w.every((s) => s.reps >= hi);
       const chip = document.createElement("span");
@@ -544,6 +567,8 @@ function renderLog() {
       lastEl.appendChild(chip);
       const won = document.createElement("span"); won.className = "chip won"; won.hidden = true; won.textContent = "Slagen ✓";
       lastEl.appendChild(won);
+      const npr = document.createElement("span"); npr.className = "chip pr"; npr.hidden = true; npr.textContent = "Nytt PR! 🏆";
+      lastEl.appendChild(npr);
     } else {
       lastEl.textContent = "Första gången. Sätt din baslinje.";
     }
@@ -640,6 +665,8 @@ function refreshCard(card) {
   if (!won || !card._last) return;
   const m = readCard(card);
   won.hidden = !(totalReps(m) > 0 && volume(m) > volume(card._last.sets));
+  const npr = card.querySelector(".chip.pr"), b = bestSet(m);
+  if (npr) npr.hidden = !(card._pr && b && better(b, card._pr.set));
 }
 function onEdit(card) {
   if (cur.done) return;
