@@ -411,9 +411,12 @@ function prFor(exId, excludeId) {
   }
   return pr;
 }
+// A session only counts as trained when at least one working set was logged.
+// Sessions that only hold skipped exercises or empty slots (e.g. a day opened by mistake) are ignored.
+const trained = (x) => Object.values(x.exercises || {}).some((e) => work(setsOf(e)).length > 0);
+function lastTrained() { return sorted().find((x) => trained(x) && (x.date < TODAY || x.done)) || null; }
 function suggestedDay() {
-  const s = sorted();
-  const latest = s.find((x) => x.date < TODAY || x.done);
+  const latest = lastTrained();
   if (!latest) return 1;
   return latest.day >= 6 ? 1 : latest.day + 1;
 }
@@ -522,7 +525,9 @@ function renderLog() {
   const p = PLAN[day];
   const exs = planFor(day);
   $("day-title").textContent = `Dag ${day} · ${p.name}`;
-  $("day-sub").textContent = `${exs.length} övningar · vila ${restText(BETWEEN)} mellan övningarna`;
+  const lt = lastTrained();
+  $("day-sub").textContent = `${exs.length} övningar · vila ${restText(BETWEEN)} mellan övningarna` +
+    (lt ? ` · förra passet: Dag ${lt.day} (${fmtDate(lt.date)})` : "");
   const list = $("exercises");
   list.innerHTML = "";
   const curId = cur._id;
@@ -986,7 +991,7 @@ window.addEventListener("pagehide", flushSave);
 
 loadSessions();
 {
-  const open = sorted().find((s) => s.date === TODAY && !s.done);
+  const open = sorted().find((s) => s.date === TODAY && !s.done && trained(s));
   selectDay(open ? open.day : suggestedDay());
 }
 setStatus(storageOk ? `${sessions.length} pass sparade på telefonen` : "Kan inte spara. Stäng av privat läge i Safari.", !storageOk);
