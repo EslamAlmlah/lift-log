@@ -78,9 +78,23 @@ h1 { font-family: var(--display); font-weight: 800; font-size: 34px; line-height
 .days button small { display: block; font: 500 10px var(--body); letter-spacing: 0; text-transform: none; color: var(--muted); margin-top: 1px; }
 .days button[aria-pressed="true"] { background: linear-gradient(160deg, var(--accent-2), var(--accent)); border-color: transparent; color: #fff; box-shadow: 0 6px 18px rgba(79,125,255,.35); }
 .days button[aria-pressed="true"] small { color: rgba(255,255,255,.85); }
-.days button.next::after { content: "nästa"; position: absolute; top: -7px; right: 3px; font: 700 9px var(--body); background: var(--good); color: #062014; border-radius: 4px; padding: 1px 4px; }
-.days button.done::before { content: "✓"; position: absolute; top: 3px; left: 5px; font: 700 10px var(--body); color: var(--good); }
-.days button[aria-pressed="true"].done::before { color: #fff; }
+.days button.next::after { content: "förslag"; position: absolute; top: -7px; right: 3px; font: 700 9px var(--body); background: var(--good); color: #062014; border-radius: 4px; padding: 1px 4px; }
+.days button.done small { color: var(--good); font-weight: 700; }
+.days button[aria-pressed="true"].done small { color: #fff; }
+.variant { display: inline-flex; gap: 4px; margin: 0 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.variant button { border: 0; background: none; color: var(--muted); font: 700 13px var(--body); padding: 6px 12px; border-radius: 7px; cursor: pointer; }
+.variant button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.chip.e1 { background: rgba(255, 93, 108, 0.16); color: #ff8a95; }
+.pr-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: 14px; font-weight: 600; }
+.rec-stats { margin-bottom: 12px; }
+.rec-stats .stat { background: linear-gradient(160deg, rgba(247,196,58,.16), rgba(20,28,48,.9)); border: 1px solid var(--line); }
+.rec { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; display: grid; gap: 6px; }
+.rec-top { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.rec-name { font-weight: 700; font-size: 15px; min-width: 0; }
+.rec-mid { display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+.rec-big { font: 800 28px/1 var(--display); color: #f7c43a; font-variant-numeric: tabular-nums; }
+.rec-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.rec-spark { width: 110px; height: 32px; flex: none; }
 .tabs { display: flex; gap: 18px; margin-top: 10px; }
 .tabs button { background: none; border: 0; padding: 4px 0; font: 600 14px var(--body); color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
 .tabs button[aria-selected="true"] { color: var(--fg); border-color: var(--accent); }
@@ -209,9 +223,10 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
   </header>
 
   <div class="bar">
-    <div class="days" id="days" role="group" aria-label="Dag i planen"></div>
+    <div class="days" id="days" role="group" aria-label="Välj pass"></div>
     <div class="tabs" role="tablist">
       <button id="tab-log" role="tab" aria-selected="true">Idag</button>
+      <button id="tab-pr" role="tab" aria-selected="false">Rekord</button>
       <button id="tab-hist" role="tab" aria-selected="false">Historik</button>
     </div>
   </div>
@@ -233,17 +248,26 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
     </div>
     <h2 id="day-title"></h2>
     <p class="sub" id="day-sub"></p>
+    <div class="variant" id="variant" role="group" aria-label="Version av passet"></div>
     <div class="list" id="exercises"></div>
-    <button type="button" class="finish" id="finish">Klar – avsluta dagen</button>
+    <button type="button" class="finish" id="finish">Klar – avsluta passet</button>
     <div class="confirm" id="confirm" hidden>
-      <p>Är du säker? Passet sparas i Historik och appen går vidare till nästa dag.</p>
+      <p>Är du säker? Passet sparas i Historik och dina nya rekord räknas.</p>
       <div class="c-btns">
         <button type="button" id="c-no">Nej, fortsätt träna</button>
         <button type="button" id="c-yes">Ja, avsluta</button>
       </div>
     </div>
     <div class="summary" id="summary" hidden></div>
-    <p class="tip">Uppvärmningsset räknas inte, de är extra. Kör sista setet nära failure, med 1–2 reps kvar. Skriv kg och reps för varje set. PR är ditt tyngsta set någonsin på övningen. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
+    <p class="tip">Välj det pass du känner för idag. Grönt "förslag" är passet som vilat längst. Passen med Version A/B växlar själva varje gång, men du kan byta. Uppvärm före överkroppspass: utåtrotation i kabel och lätta face pulls, 2×15 var. Uppvärmningsset räknas inte, de är extra. Kör sista setet nära failure, med 1–2 reps kvar. Skriv kg och reps för varje set. PR är ditt tyngsta set någonsin på övningen. Grå siffror är vad du gjorde förra gången, och kg följer med från setet ovanför. Tryck på "Set 1" för att markera uppvärmning. Tryck × för att ta bort ett set. När du fyllt i reps startar vilotimern av sig själv. Blå = reps att slå. Orange = du klarade toppen av intervallet på alla set, öka vikten.</p>
+  </section>
+
+  <section id="view-pr" hidden>
+    <h2>Dina rekord</h2>
+    <p class="sub" id="rec-sub"></p>
+    <div class="stats rec-stats" id="rec-stats"></div>
+    <div class="list" id="records"></div>
+    <p class="tip">PR = tyngsta set någonsin på övningen (fler reps vinner om vikten är lika). "Max ca" är ett uppskattat 1RM från dina set med 12 reps eller färre, så du ser att du blir starkare även när du kör fler reps på samma vikt. Kurvan visar dina senaste 12 pass.</p>
   </section>
 
   <section id="view-hist" hidden>
@@ -293,55 +317,65 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
 </div>
 
 <script>
-// [id, name, sets, repLow, repHigh, restSeconds]. Rest: 2–3 min on presses, rows, squats; 60–90 s on the rest.
+// [id, name, sets, repLow, repHigh, restSeconds, variant?]. Variant "A"/"B": only in that week's version of the pass.
+// Rest: 2–3 min on heavy presses and rows; 60–90 s on the rest.
 const BIG = 150, SMALL = 75, BETWEEN = 120;
 const PLAN = {
-  1: { name: "Push", focus: "bröst", ex: [
-    ["incline-db-press", "Incline dumbbell press", 3, 6, 10, BIG],
-    ["flat-chest-press", "Flat bench or machine chest press", 3, 6, 10, BIG],
-    ["pec-deck", "Pec deck fly", 3, 10, 15, SMALL],
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 12, 20, SMALL],
-    ["oh-cable-tri", "Overhead cable triceps extension", 3, 10, 15, SMALL],
+  brost: { short: "Bröst", name: "Bröst + triceps", ex: [
+    ["machine-chest-press", "Bröstpress maskin (lite smalare grepp, skulderblad bak)", 3, 6, 8, BIG],
+    ["incline-db-press", "Lutande hantelpress", 2, 8, 10, BIG, "A"],
+    ["incline-smith", "Lutande Smith-press", 2, 8, 10, BIG, "B"],
+    ["pec-deck", "Maskinflyes / pec deck", 2, 10, 12, SMALL, "A"],
+    ["cable-fly-low", "Kabelflyes nerifrån-upp", 2, 10, 12, SMALL, "B"],
+    ["lateral-raise", "Kabelsidolyft (en arm, kg per arm)", 2, 12, 15, SMALL],
+    ["cable-pullover", "Cable pullover", 2, 10, 12, SMALL],
+    ["tri-pushdown", "Triceps pushdown", 3, 10, 12, SMALL],
   ]},
-  2: { name: "Pull", focus: "lats", ex: [
-    ["lat-pulldown", "Lat pulldown or pull-ups", 3, 8, 12, BIG],
-    ["cs-row", "Chest-supported row", 3, 8, 12, BIG],
-    ["single-arm-pulldown", "Single-arm cable pulldown or lat pullover", 3, 10, 15, SMALL],
-    ["rear-delt-fly", "Rear delt fly", 3, 12, 20, SMALL],
-    ["incline-db-curl", "Incline dumbbell curl", 3, 8, 12, SMALL],
+  lats: { short: "Lats", name: "Lats + biceps", ex: [
+    ["lat-pulldown", "Pulldown", 3, 8, 12, BIG],
+    ["seated-pulldown", "Sittande pulldown, neutralt grepp", 2, 10, 12, 120],
+    ["cable-row-wide", "Cable row, brett handtag", 2, 10, 12, 120],
+    ["incline-db-curl", "Lutande hantelcurl", 3, 8, 12, SMALL, "A"],
+    ["bayesian-curl", "Bayesian kabelcurl", 3, 8, 12, SMALL, "B"],
+    ["single-arm-pulldown", "Enarms-pulldown (till failure)", 2, 10, 15, SMALL],
   ]},
-  3: { name: "Ben", focus: "ben", ex: [
-    ["hack-squat", "Hack squat or squat", 2, 6, 10, BIG],
-    ["rdl", "Romanian deadlift", 2, 8, 10, BIG],
-    ["leg-press", "Leg press", 2, 10, 15, 120],
-    ["leg-curl", "Leg curl", 2, 10, 15, SMALL],
-    ["adductor", "Adductor machine (full ROM, långsam negativ)", 2, 10, 15, 60],
+  ben: { short: "Ben", name: "Ben", ex: [
+    ["leg-press", "Benpress", 2, 8, 12, BIG, "A"],
+    ["hack-squat", "Hack squat", 2, 8, 12, BIG, "B"],
+    ["leg-extension", "Leg extension", 2, 10, 15, SMALL],
+    ["leg-curl", "Hamstring curl", 2, 10, 15, SMALL],
+    ["adductor", "Adduktor (full rörelse, långsam negativ)", 2, 10, 15, 60],
   ]},
-  4: { name: "Axlar + armar", focus: "axlar", ex: [
-    ["machine-shoulder-press", "Machine shoulder press", 3, 6, 10, BIG],
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 12, 20, SMALL],
-    ["reverse-pec-deck", "Reverse pec deck", 3, 15, 20, 60],
-    ["ez-21s", "EZ-bar 21s (7 nere, 7 uppe, 7 hela)", 3, 21, 21, 90],
-    ["tri-pushdown", "Triceps pushdown", 3, 10, 15, SMALL],
-    ["hammer-curl", "Hammer curl", 3, 10, 12, SMALL],
+  axlar: { short: "Axlar", name: "Axlar + triceps", ex: [
+    ["machine-shoulder-press", "Axelpress maskin (inte för djupt i botten)", 2, 8, 10, BIG],
+    ["lateral-raise", "Kabelsidolyft (en arm, kg per arm)", 3, 12, 15, SMALL, "A"],
+    ["machine-lateral", "Maskinsidolyft", 3, 12, 15, SMALL, "B"],
+    ["reverse-pec-deck", "Omvänd pec deck", 2, 15, 20, 60],
+    ["single-arm-pushdown", "Enarms-pushdown", 2, 10, 12, SMALL, "A"],
+    ["cross-body-tri", "Cross-body kabeltriceps", 2, 10, 12, SMALL, "B"],
   ]},
-  5: { name: "Överkropp", focus: "överkropp", ex: [
-    ["weighted-pullup", "Weighted pull-up or pulldown", 3, 6, 10, BIG],
-    ["machine-chest-press", "Machine chest press", 3, 8, 12, BIG],
-    ["seated-cable-row", "Seated cable row", 3, 10, 12, 120],
-    ["pec-deck", "Pec deck fly", 3, 12, 15, SMALL],
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 15, 20, SMALL],
-    ["ss-curl", "Curl (superset)", 3, 12, 12, 0],
-    ["ss-pushdown", "Pushdown (superset)", 3, 12, 12, 90],
+  rygg: { short: "Rygg", name: "Inre rygg + biceps", ex: [
+    ["tbar-row", "T-bar row", 3, 8, 10, BIG, "A"],
+    ["cs-row", "Bröststödd rodd", 3, 8, 10, BIG, "B"],
+    ["cable-row-close", "Cable row, smalt grepp", 2, 10, 12, 120],
+    ["face-pull", "Face pull", 2, 12, 15, 60],
+    ["hammer-curl", "Hammercurl", 3, 10, 12, SMALL, "A"],
+    ["preacher-curl", "Preachercurl", 3, 10, 12, SMALL, "B"],
   ]},
-  6: { name: "Pump", focus: "valfri", ex: [
-    ["lateral-raise", "Cable lateral raise (en arm, kg per arm)", 3, 12, 20, 60],
-    ["preacher-curl", "Preacher curl or EZ-bar 21s", 3, 12, 20, 60],
-    ["oh-tri-ext", "Overhead triceps extension", 3, 12, 20, 60],
-    ["rear-delt-fly", "Rear delt fly", 3, 12, 20, 60],
-    ["pec-deck", "Pec deck fly", 3, 12, 20, 60],
+  pump: { short: "Pump", name: "Pump (valfri, ingen press)", extra: true, ex: [
+    ["pec-deck", "Pec deck", 2, 12, 20, 60],
+    ["lateral-raise", "Kabelsidolyft (en arm, kg per arm)", 2, 12, 20, 60],
+    ["incline-db-curl", "Curl", 2, 12, 20, 60],
+    ["tri-pushdown", "Pushdown", 2, 12, 20, 60],
+    ["reverse-pec-deck", "Omvänd pec deck", 2, 15, 20, 60],
   ]},
 };
+const ORDER = Object.keys(PLAN);
+// Names of the old numbered program, so older history and records still read well.
+const OLD_DAYS = { 1: "Push", 2: "Pull", 3: "Ben", 4: "Axlar + armar", 5: "Överkropp", 6: "Pump" };
+const OLD_NAMES = { "flat-chest-press": "Flat bänk / bröstpress", "oh-cable-tri": "Overhead kabeltriceps", "rear-delt-fly": "Rear delt fly", "rdl": "Rumänsk marklyft", "ez-21s": "EZ-bar 21s", "weighted-pullup": "Chins med vikt", "seated-cable-row": "Sittande kabelrodd", "ss-curl": "Curl (superset)", "ss-pushdown": "Pushdown (superset)", "oh-tri-ext": "Overhead triceps", "calf-raise": "Vadpress", "seated-db-press": "Sittande hantelpress" };
+const passName = (d) => (PLAN[d] ? PLAN[d].name : OLD_DAYS[d] ? `${OLD_DAYS[d]} (gamla planen)` : "Pass");
+const exName = (id) => { for (const k of ORDER) { const e = PLAN[k].ex.find((x) => x[0] === id); if (e) return e[1].replace(/ \(.*\)$/, ""); } return OLD_NAMES[id] || id; };
 
 const $ = (id) => document.getElementById(id);
 const pad = (n) => String(n).padStart(2, "0");
@@ -411,15 +445,35 @@ function prFor(exId, excludeId) {
   }
   return pr;
 }
+// Estimated one-rep max (Epley), from sets of 12 reps or fewer so pump sets don't inflate it.
+const e1rm = (x) => (x.kg > 0 && x.reps > 0 && x.reps <= 12 ? x.kg * (1 + x.reps / 30) : 0);
+const setsE1 = (sets) => Math.max(0, ...work(sets).map(e1rm));
+function bestE1(exId, excludeId) {
+  let m = 0;
+  for (const s of sessions) if (s._id !== excludeId) m = Math.max(m, setsE1(setsOf(s.exercises && s.exercises[exId])));
+  return m;
+}
 // A session only counts as trained when at least one working set was logged.
 // Sessions that only hold skipped exercises or empty slots (e.g. a day opened by mistake) are ignored.
 const trained = (x) => Object.values(x.exercises || {}).some((e) => work(setsOf(e)).length > 0);
 function lastTrained() { return sorted().find((x) => trained(x) && (x.date < TODAY || x.done)) || null; }
+// When each pass was last trained (null = never).
+function lastOf(d) { const x = sorted().find((s) => s.day === d && trained(s)); return x || null; }
+const daysSince = (iso) => Math.round((new Date(TODAY + "T12:00:00") - new Date(iso + "T12:00:00")) / 86400000);
+// Suggestion: the main pass that has rested longest (never trained first, in plan order). Pump is never suggested.
 function suggestedDay() {
-  const latest = lastTrained();
-  if (!latest) return 1;
-  return latest.day >= 6 ? 1 : latest.day + 1;
+  let best = null, bestAge = -1;
+  for (const d of ORDER) {
+    if (PLAN[d].extra) continue;
+    const l = lastOf(d);
+    if (l && l.date === TODAY) continue;
+    const age = l ? daysSince(l.date) : 9999;
+    if (age > bestAge) { best = d; bestAge = age; }
+  }
+  return best || ORDER[0];
 }
+// A/B: the opposite of the last time this pass was trained.
+function variantFor(d) { const l = lastOf(d); return l && l.v === "A" ? "B" : "A"; }
 
 /* ---------- storage (this phone) ---------- */
 const KEY = "liftlog.sessions.v1";
@@ -442,7 +496,7 @@ function save() {
   const all = readStore();
   const id = cur._id;
   if (Object.keys(cur.exercises).length || cur.done || (cur.skipped || []).length) {
-    const body = { date: cur.date, day: cur.day, exercises: cur.exercises, updatedAt: new Date().toISOString() };
+    const body = { date: cur.date, day: cur.day, v: cur.v, exercises: cur.exercises, updatedAt: new Date().toISOString() };
     if (cur.startedAt) body.startedAt = cur.startedAt;
     if ((cur.skipped || []).length) body.skipped = cur.skipped;
     if (cur.done) { body.done = true; body.finishedAt = cur.finishedAt; }
@@ -462,19 +516,22 @@ function flushSave() { if (saveTimer) { clearTimeout(saveTimer); saveTimer = nul
 function renderDays() {
   const next = suggestedDay();
   $("days").innerHTML = "";
-  for (let d = 1; d <= 6; d++) {
+  for (const d of ORDER) {
     const b = document.createElement("button");
     b.type = "button";
     b.setAttribute("aria-pressed", String(d === day));
+    b.title = PLAN[d].name;
     if (sessions.some((s) => s.date === TODAY && s.day === d && s.done)) b.classList.add("done");
     else if (d === next) b.classList.add("next");
-    b.innerHTML = `Dag ${d}<small></small>`;
-    b.querySelector("small").textContent = PLAN[d].name;
+    b.innerHTML = `<span></span><small></small>`;
+    b.querySelector("span").textContent = PLAN[d].short;
+    const l = lastOf(d), n = l ? daysSince(l.date) : null;
+    b.querySelector("small").textContent = n === null ? "ny" : n === 0 ? (b.classList.contains("done") ? "klar ✓" : "idag") : `${n} d sen`;
     b.onclick = () => selectDay(d);
     $("days").appendChild(b);
   }
 }
-const clone = (s) => ({ _id: s._id, date: s.date, day: s.day, startedAt: s.startedAt, done: !!s.done, finishedAt: s.finishedAt, skipped: [...(s.skipped || [])], exercises: JSON.parse(JSON.stringify(s.exercises || {})) });
+const clone = (s) => ({ _id: s._id, date: s.date, day: s.day, v: s.v, startedAt: s.startedAt, done: !!s.done, finishedAt: s.finishedAt, skipped: [...(s.skipped || [])], exercises: JSON.parse(JSON.stringify(s.exercises || {})) });
 function freeId(date, d) {
   const taken = new Set(sessions.map((s) => s._id));
   let id = sid(date, d), n = 2;
@@ -486,7 +543,8 @@ function selectDay(d) {
   day = d;
   // A finished session lives in History only; picking that day again starts a fresh one.
   const open = sessions.find((s) => s.date === TODAY && s.day === d && !s.done);
-  cur = open ? clone(open) : { _id: freeId(TODAY, d), date: TODAY, day: d, exercises: {} };
+  cur = open ? clone(open) : { _id: freeId(TODAY, d), date: TODAY, day: d, v: variantFor(d), exercises: {} };
+  if (!cur.v) cur.v = "A";
   renderDays();
   renderLog();
 }
@@ -496,7 +554,7 @@ function selectDay(d) {
 const HKEY = "liftlog.hidden.v1";
 function readHidden() { try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch { return []; } }
 function writeHidden(h) { try { localStorage.setItem(HKEY, JSON.stringify(h)); } catch {} }
-const planFor = (d) => PLAN[d].ex.filter(([id]) => !readHidden().includes(`${d}:${id}`));
+const planFor = (d, v) => PLAN[d].ex.filter(([id, , , , , , only]) => (!only || only === v) && !readHidden().includes(`${d}:${id}`));
 
 function skippedCard(id, name) {
   const card = document.createElement("div");
@@ -513,7 +571,7 @@ function skippedCard(id, name) {
     if (rm.dataset.sure !== "1") { rm.dataset.sure = "1"; rm.textContent = "Säker? Tryck igen"; return; }
     writeHidden([...readHidden(), `${day}:${id}`]);
     cur.skipped = (cur.skipped || []).filter((x) => x !== id); markDirty(); renderLog();
-    setStatus(`${name} är borttagen från Dag ${day}. Du kan få tillbaka den under Historik.`);
+    setStatus(`${name} är borttagen från ${PLAN[day].name}. Du kan få tillbaka den under Historik.`);
   };
   btns.append(undo, rm);
   card.append(head, btns);
@@ -523,11 +581,18 @@ function markDirty() { dirty = true; clearTimeout(saveTimer); saveTimer = setTim
 
 function renderLog() {
   const p = PLAN[day];
-  const exs = planFor(day);
-  $("day-title").textContent = `Dag ${day} · ${p.name}`;
+  const exs = planFor(day, cur.v);
+  $("day-title").textContent = p.name;
   const lt = lastTrained();
   $("day-sub").textContent = `${exs.length} övningar · vila ${restText(BETWEEN)} mellan övningarna` +
-    (lt ? ` · förra passet: Dag ${lt.day} (${fmtDate(lt.date)})` : "");
+    (lt ? ` · förra passet: ${passName(lt.day)} (${fmtDate(lt.date)})` : "");
+  const vb = $("variant");
+  vb.hidden = !p.ex.some((e) => e[6]);
+  vb.innerHTML = `<button type="button" aria-pressed="${cur.v === "A"}">Version A</button><button type="button" aria-pressed="${cur.v === "B"}">Version B</button>`;
+  vb.querySelectorAll("button").forEach((b, i) => (b.onclick = () => {
+    if (cur.done) return;
+    cur.v = i ? "B" : "A"; markDirty(); renderLog();
+  }));
   const list = $("exercises");
   list.innerHTML = "";
   const curId = cur._id;
@@ -539,7 +604,7 @@ function renderLog() {
     card.className = "ex";
     card.dataset.id = id;
     const pr = prFor(id, curId);
-    Object.assign(card, { _pr: pr, _last: last, _sets: sets, _hi: hi, _rest: rest, _name: name });
+    Object.assign(card, { _pr: pr, _e1: bestE1(id, curId), _last: last, _sets: sets, _hi: hi, _rest: rest, _name: name });
 
     const head = document.createElement("div"); head.className = "ex-head";
     const nm = document.createElement("div"); nm.className = "ex-name"; nm.textContent = name;
@@ -561,7 +626,8 @@ function renderLog() {
         const t = document.createElement("span");
         t.innerHTML = `PR: <b></b> <span class="d"></span>`;
         t.querySelector("b").textContent = `${pr.set.kg > 0 ? pr.set.kg + " kg" : "BW"} × ${pr.set.reps}`;
-        t.querySelector(".d").textContent = `(${fmtDate(pr.date)})`;
+        const e1 = bestE1(id, curId);
+        t.querySelector(".d").textContent = `(${fmtDate(pr.date)})${e1 ? ` · max ${Math.round(e1)} kg` : ""}`;
         lastEl.appendChild(t);
       }
       const w = work(last.sets);
@@ -574,6 +640,8 @@ function renderLog() {
       lastEl.appendChild(won);
       const npr = document.createElement("span"); npr.className = "chip pr"; npr.hidden = true; npr.textContent = "Nytt PR! 🏆";
       lastEl.appendChild(npr);
+      const ne = document.createElement("span"); ne.className = "chip e1"; ne.hidden = true; ne.textContent = "Starkare än någonsin 💥";
+      lastEl.appendChild(ne);
     } else {
       lastEl.textContent = "Första gången. Sätt din baslinje.";
     }
@@ -671,7 +739,10 @@ function refreshCard(card) {
   const m = readCard(card);
   won.hidden = !(totalReps(m) > 0 && volume(m) > volume(card._last.sets));
   const npr = card.querySelector(".chip.pr"), b = bestSet(m);
-  if (npr) npr.hidden = !(card._pr && b && better(b, card._pr.set));
+  const isPr = !!(card._pr && b && better(b, card._pr.set));
+  if (npr) npr.hidden = !isPr;
+  const ne = card.querySelector(".chip.e1"), e = setsE1(m);
+  if (ne) ne.hidden = isPr || !(card._e1 && e > card._e1 + 0.01);
 }
 function onEdit(card) {
   if (cur.done) return;
@@ -699,12 +770,16 @@ function applyLock() {
 function renderSummary() {
   const curId = cur._id;
   let setsDone = 0, vol = 0, beaten = 0, exDone = 0;
-  for (const [id] of PLAN[day].ex) {
+  const prs = [];
+  for (const id of Object.keys(cur.exercises)) {
     const s = setsOf(cur.exercises[id]);
     if (!work(s).length) continue;
     exDone++; setsDone += work(s).length; vol += kgVolume(s);
     const last = lastFor(id, curId);
     if (last && volume(s) > volume(last.sets)) beaten++;
+    const pr = prFor(id, curId), b = bestSet(s);
+    if (pr && b && better(b, pr.set)) prs.push(`${exName(id)}: ${kgText(b.kg)} kg × ${b.reps}`);
+    else if (pr && setsE1(s) > bestE1(id, curId) + 0.01) prs.push(`${exName(id)}: max ${Math.round(setsE1(s))} kg`);
   }
   let mins = "";
   if (cur.startedAt && cur.finishedAt) {
@@ -715,9 +790,9 @@ function renderSummary() {
   el.innerHTML = "";
   const h = document.createElement("h3"); h.textContent = "Bra jobbat! 💪";
   const p = document.createElement("p");
-  p.textContent = `Dag ${day} är klar${mins}. ${beaten ? `Du slog förra gången på ${beaten} övning${beaten > 1 ? "ar" : ""}.` : "Nästa gång har du siffror att slå."} Ät protein och sov gott.`;
+  p.textContent = `${PLAN[day].name} är klar${mins}. ${beaten ? `Du slog förra gången på ${beaten} övning${beaten > 1 ? "ar" : ""}.` : "Nästa gång har du siffror att slå."} Ät protein och sov gott.`;
   const st = document.createElement("div"); st.className = "stats";
-  for (const [v, l] of [[exDone, "övningar"], [setsDone, "set"], [Math.round(vol).toLocaleString("sv-SE"), "kg totalt"]]) {
+  for (const [v, l] of [[prs.length, prs.length === 1 ? "nytt PR" : "nya PR"], [setsDone, "set"], [Math.round(vol).toLocaleString("sv-SE"), "kg totalt"]]) {
     const d = document.createElement("div"); d.className = "stat";
     const b = document.createElement("b"); b.textContent = v;
     const s = document.createElement("span"); s.textContent = l;
@@ -725,10 +800,16 @@ function renderSummary() {
   }
   const re = document.createElement("button"); re.type = "button"; re.className = "reopen"; re.textContent = "Ändra passet";
   re.onclick = () => { cur.done = false; delete cur.finishedAt; save(); renderDays(); applyLock(); };
-  const nx = document.createElement("button"); nx.type = "button"; nx.className = "reopen"; nx.textContent = `Gå till Dag ${suggestedDay()}`;
+  const nx = document.createElement("button"); nx.type = "button"; nx.className = "reopen"; nx.textContent = `Nästa förslag: ${PLAN[suggestedDay()].name}`;
   nx.onclick = () => { selectDay(suggestedDay()); window.scrollTo({ top: 0, behavior: "smooth" }); };
   const row = document.createElement("div"); row.style.cssText = "display:flex;gap:8px;flex-wrap:wrap"; row.append(re, nx);
-  el.append(h, st, p, row);
+  el.append(h, st, p);
+  if (prs.length) {
+    const ul = document.createElement("ul"); ul.className = "pr-list";
+    for (const t of prs) { const li = document.createElement("li"); li.textContent = "🏆 " + t; ul.appendChild(li); }
+    el.appendChild(ul);
+  }
+  el.appendChild(row);
 }
 $("finish").onclick = () => {
   if (!Object.keys(cur.exercises).length) { setStatus("Logga minst ett set innan du avslutar dagen.", true); return; }
@@ -758,7 +839,7 @@ function startRestFor(card, input) {
   else if (lastSet) {
     const cards = [...document.querySelectorAll("#exercises .ex")];
     const next = cards.slice(cards.indexOf(card) + 1).find((c) => !c._skipped);
-    if (!next) { label = "Sista övningen klar – tryck Klar – avsluta dagen"; secs = 0; }
+    if (!next) { label = "Sista övningen klar – tryck Klar – avsluta passet"; secs = 0; }
     else { secs = Math.max(BETWEEN, card._rest || 0); label = `Vila, sen ${next._name}`; }
   } else label = `Vila till set ${idx + 2} · ${card._name}`;
   if (!secs) { if (label) setStatus(label); return; }
@@ -802,12 +883,10 @@ function renderHistory() {
   const h = $("history"); h.innerHTML = "";
   const all = sorted();
   if (!all.length) { h.innerHTML = `<div class="empty">Inga pass än. Ditt första dyker upp här när du loggar ett set.</div>`; return; }
-  const names = {};
-  Object.values(PLAN).forEach((p) => p.ex.forEach(([id, nm]) => { names[id] = names[id] || nm; }));
   for (const s of all) {
     const el = document.createElement("div"); el.className = "sess";
     const t = document.createElement("h3");
-    t.textContent = `Dag ${s.day} · ${PLAN[s.day] ? PLAN[s.day].name : ""}${s.done ? " ✓" : ""}`;
+    t.textContent = `${passName(s.day)}${s.v && PLAN[s.day] && PLAN[s.day].ex.some((e) => e[6]) ? " · " + s.v : ""}${s.done ? " ✓" : ""}`;
     const d = document.createElement("span"); d.textContent = fmtDate(s.date); t.appendChild(d);
     const ul = document.createElement("ul");
     const order = PLAN[s.day] ? PLAN[s.day].ex.map((e) => e[0]) : [];
@@ -815,7 +894,7 @@ function renderHistory() {
     for (const id of Object.keys(s.exercises || {}).sort((a, b) => rank(a) - rank(b))) {
       const e = s.exercises[id];
       const li = document.createElement("li");
-      const a = document.createElement("span"); a.textContent = e.name || names[id] || id;
+      const a = document.createElement("span"); a.textContent = e.name || exName(id);
       const b = document.createElement("span"); b.textContent = setsOf(e).filter((x) => x.reps > 0).map(setText).join(", ");
       li.append(a, b); ul.appendChild(li);
     }
@@ -823,11 +902,12 @@ function renderHistory() {
   }
 }
 function showTab(which) {
-  const log = which === "log";
-  $("tab-log").setAttribute("aria-selected", String(log));
-  $("tab-hist").setAttribute("aria-selected", String(!log));
-  $("view-log").hidden = !log; $("view-hist").hidden = log;
-  if (!log) { renderHistory(); renderWeightHistory(); renderHidden(); }
+  for (const t of ["log", "pr", "hist"]) {
+    $("tab-" + t).setAttribute("aria-selected", String(t === which));
+    $("view-" + t).hidden = t !== which;
+  }
+  if (which === "hist") { renderHistory(); renderWeightHistory(); renderHidden(); }
+  if (which === "pr") renderRecords();
 }
 function renderHidden() {
   const h = readHidden(), box = $("hidden-list");
@@ -837,14 +917,84 @@ function renderHidden() {
     const ex = PLAN[d] && PLAN[d].ex.find((e) => e[0] === id);
     const row = document.createElement("div"); row.className = "sess";
     const t = document.createElement("div"); t.className = "ex-head";
-    const n = document.createElement("div"); n.className = "ex-name"; n.textContent = `${ex ? ex[1] : id} · Dag ${d}`;
+    const n = document.createElement("div"); n.className = "ex-name"; n.textContent = `${ex ? ex[1] : exName(id)} · ${passName(d)}`;
     const b = document.createElement("button"); b.type = "button"; b.className = "skip"; b.textContent = "Lägg tillbaka";
-    b.onclick = () => { writeHidden(readHidden().filter((k) => k !== key)); renderHidden(); if (+d === day) renderLog(); };
+    b.onclick = () => { writeHidden(readHidden().filter((k) => k !== key)); renderHidden(); if (d === day) renderLog(); };
     t.append(n, b); row.appendChild(t); box.appendChild(row);
   }
 }
 $("tab-log").onclick = () => showTab("log");
 $("tab-hist").onclick = () => showTab("hist");
+$("tab-pr").onclick = () => showTab("pr");
+
+/* ---------- records ---------- */
+// Walk every session oldest first and note each time an exercise got a new heaviest set or a new estimated max.
+function recordData() {
+  const chron = [...sessions].filter(trained).sort((a, b) => (a.date + (a.updatedAt || "")).localeCompare(b.date + (b.updatedAt || "")));
+  const ex = {};
+  const events = [];
+  for (const s of chron) {
+    for (const [id, e] of Object.entries(s.exercises || {})) {
+      const sets = setsOf(e), b = bestSet(sets);
+      if (!b) continue;
+      const r = ex[id] || (ex[id] = { id, name: e.name || exName(id), best: null, bestDate: null, e1: 0, first: null, hist: [], prs: 0, lastDate: null });
+      const e1 = setsE1(sets);
+      const isNew = r.best && (better(b, r.best) || e1 > r.e1 + 0.01);
+      if (isNew) { r.prs++; events.push({ id, date: s.date }); }
+      if (!r.best || better(b, r.best)) { r.best = b; r.bestDate = s.date; }
+      if (e1 > r.e1) r.e1 = e1;
+      if (!r.first) r.first = { set: b, e1 };
+      r.hist.push(e1 || (b.kg > 0 ? b.kg : b.reps));
+      r.lastDate = s.date;
+    }
+  }
+  // Weeks in a row (Monday start) with at least 3 trained sessions, counting back from this week.
+  const wk = (iso) => { const d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return isoOf(d); };
+  const perWeek = {};
+  for (const s of chron) perWeek[wk(s.date)] = (perWeek[wk(s.date)] || 0) + 1;
+  let streak = 0, w = wk(TODAY);
+  if ((perWeek[w] || 0) < 3) w = shiftIso(w, -7);
+  while ((perWeek[w] || 0) >= 3) { streak++; w = shiftIso(w, -7); }
+  return { ex: Object.values(ex), events, streak, sessions: chron.length };
+}
+function spark(vals) {
+  if (vals.length < 2) return "";
+  const lo = Math.min(...vals), hi = Math.max(...vals), span = hi - lo || 1;
+  const pts = vals.map((v, i) => [4 + (112 * i) / (vals.length - 1), 4 + 24 * (1 - (v - lo) / span)]);
+  const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const [ex, ey] = pts[pts.length - 1];
+  return `<svg viewBox="0 0 120 32" class="rec-spark" aria-hidden="true"><path d="${d}" fill="none" stroke="#7aa0ff" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"/><circle cx="${ex}" cy="${ey}" r="3" fill="#f7c43a"/></svg>`;
+}
+function renderRecords() {
+  const { ex, events, streak, sessions: n } = recordData();
+  const since = (days) => events.filter((e) => daysSince(e.date) < days).length;
+  const st = $("rec-stats"); st.innerHTML = "";
+  for (const [v, l] of [[since(7), "PR senaste 7 d"], [events.length, "PR totalt"], [streak, streak === 1 ? "vecka i rad" : "veckor i rad"]]) {
+    const d = document.createElement("div"); d.className = "stat";
+    const b = document.createElement("b"); b.textContent = v;
+    const s = document.createElement("span"); s.textContent = l;
+    d.append(b, s); st.appendChild(d);
+  }
+  $("rec-sub").textContent = n ? `${n} pass loggade. "Veckor i rad" räknar veckor med minst 3 pass.` : "";
+  const list = $("records"); list.innerHTML = "";
+  if (!ex.length) { list.innerHTML = `<div class="empty">Inga rekord än. Logga ett pass så dyker de upp här.</div>`; return; }
+  ex.sort((a, b) => (b.bestDate || "").localeCompare(a.bestDate || "") || b.e1 - a.e1);
+  for (const r of ex) {
+    const c = document.createElement("div"); c.className = "rec";
+    const fresh = r.prs && daysSince(r.bestDate) < 7;
+    const gain = r.first && r.first.e1 && r.e1 ? Math.round(r.e1 - r.first.e1) : 0;
+    c.innerHTML = `<div class="rec-top"><div class="rec-name"></div>${fresh ? '<span class="chip pr">Ny 🏆</span>' : ""}</div>
+      <div class="rec-mid"><div><div class="rec-big"></div><div class="rec-meta"></div></div>${spark(r.hist.slice(-12))}</div>`;
+    c.querySelector(".rec-name").textContent = r.name;
+    c.querySelector(".rec-big").textContent = `${r.best.kg > 0 ? r.best.kg + " kg" : "BW"} × ${r.best.reps}`;
+    const bits = [fmtDate(r.bestDate)];
+    if (r.e1) bits.push(`max ca ${Math.round(r.e1)} kg`);
+    if (gain > 0) bits.push(`+${gain} kg sedan start`);
+    if (r.prs) bits.push(`${r.prs} PR`);
+    c.querySelector(".rec-meta").textContent = bits.join(" · ");
+    list.appendChild(c);
+  }
+}
 
 /* ---------- body weight ---------- */
 const WKEY = "liftlog.weights.v1";
@@ -991,7 +1141,7 @@ window.addEventListener("pagehide", flushSave);
 
 loadSessions();
 {
-  const open = sorted().find((s) => s.date === TODAY && !s.done && trained(s));
+  const open = sorted().find((s) => s.date === TODAY && !s.done && trained(s) && PLAN[s.day]);
   selectDay(open ? open.day : suggestedDay());
 }
 setStatus(storageOk ? `${sessions.length} pass sparade på telefonen` : "Kan inte spara. Stäng av privat läge i Safari.", !storageOk);
