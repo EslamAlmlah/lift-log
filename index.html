@@ -321,59 +321,59 @@ input.wide { width: 100%; text-align: left; padding: 0 12px; font: 500 15px var(
 // Rest: 2–3 min on heavy presses and rows; 60–90 s on the rest.
 const BIG = 150, SMALL = 75, BETWEEN = 120;
 const PLAN = {
-  brost: { short: "Bröst", name: "Bröst + triceps", ex: [
-    ["machine-chest-press", "Bröstpress maskin (lite smalare grepp, skulderblad bak)", 3, 6, 8, BIG],
-    ["incline-db-press", "Lutande hantelpress", 2, 8, 10, BIG, "A"],
-    ["incline-smith", "Lutande Smith-press", 2, 8, 10, BIG, "B"],
-    ["pec-deck", "Maskinflyes / pec deck", 2, 10, 12, SMALL, "A"],
-    ["cable-fly-low", "Kabelflyes nerifrån-upp", 2, 10, 12, SMALL, "B"],
-    ["lateral-raise", "Kabelsidolyft (en arm, kg per arm)", 2, 12, 15, SMALL],
-    ["cable-pullover", "Cable pullover", 2, 10, 12, SMALL],
+  brost: { short: "Chest", name: "Chest + triceps", ex: [
+    ["machine-chest-press", "Machine chest press (slightly narrower grip, shoulder blades back)", 3, 6, 8, BIG],
+    ["incline-db-press", "Incline dumbbell press", 2, 8, 10, BIG, "A"],
+    ["incline-smith", "Incline Smith press", 2, 8, 10, BIG, "B"],
+    ["pec-deck", "Machine fly / pec deck", 2, 10, 12, SMALL, "A"],
+    ["cable-fly-low", "Low-to-high cable fly", 2, 10, 12, SMALL, "B"],
+    ["lateral-raise", "Single-arm cable lateral raise (kg per arm)", 2, 12, 15, SMALL],
     ["tri-pushdown", "Triceps pushdown", 3, 10, 12, SMALL],
   ]},
   lats: { short: "Lats", name: "Lats + biceps", ex: [
-    ["lat-pulldown", "Pulldown", 3, 8, 12, BIG],
-    ["seated-pulldown", "Sittande pulldown, neutralt grepp", 2, 10, 12, 120],
-    ["cable-row-wide", "Cable row, brett handtag", 2, 10, 12, 120],
-    ["incline-db-curl", "Lutande hantelcurl", 3, 8, 12, SMALL, "A"],
-    ["bayesian-curl", "Bayesian kabelcurl", 3, 8, 12, SMALL, "B"],
-    ["single-arm-pulldown", "Enarms-pulldown (till failure)", 2, 10, 15, SMALL],
+    ["lat-pulldown", "Lat pulldown (wide grip)", 3, 8, 12, BIG, "A"],
+    ["seated-pulldown", "Close-grip neutral lat pulldown", 3, 8, 12, BIG, "B"],
+    ["single-arm-row", "Single-arm cable row (elbow close, pull to hip)", 2, 10, 12, SMALL],
+    ["cable-pullover", "Cable pullover", 2, 10, 12, SMALL],
+    ["incline-db-curl", "Incline dumbbell curl", 3, 8, 12, SMALL, "A"],
+    ["bayesian-curl", "Bayesian cable curl", 3, 8, 12, SMALL, "B"],
+    ["single-arm-pulldown", "Single-arm pulldown (to failure)", 2, 10, 15, SMALL],
   ]},
-  ben: { short: "Ben", name: "Ben", ex: [
-    ["leg-press", "Benpress", 2, 8, 12, BIG, "A"],
+  ben: { short: "Legs", name: "Legs", ex: [
+    ["leg-press", "Leg press", 2, 8, 12, BIG, "A"],
     ["hack-squat", "Hack squat", 2, 8, 12, BIG, "B"],
     ["leg-extension", "Leg extension", 2, 10, 15, SMALL],
     ["leg-curl", "Hamstring curl", 2, 10, 15, SMALL],
-    ["adductor", "Adduktor (full rörelse, långsam negativ)", 2, 10, 15, 60],
+    ["adductor", "Adductor machine (full range, slow negative)", 2, 10, 15, 60],
   ]},
-  axlar: { short: "Axlar", name: "Axlar + triceps", ex: [
-    ["machine-shoulder-press", "Axelpress maskin (inte för djupt i botten)", 2, 8, 10, BIG],
-    ["lateral-raise", "Kabelsidolyft (en arm, kg per arm)", 3, 12, 15, SMALL, "A"],
-    ["machine-lateral", "Maskinsidolyft", 3, 12, 15, SMALL, "B"],
-    ["reverse-pec-deck", "Omvänd pec deck", 2, 15, 20, 60],
-    ["single-arm-pushdown", "Enarms-pushdown", 2, 10, 12, SMALL, "A"],
-    ["cross-body-tri", "Cross-body kabeltriceps", 2, 10, 12, SMALL, "B"],
+  axlar: { short: "Delts", name: "Shoulders + triceps", ex: [
+    ["machine-shoulder-press", "Machine shoulder press (not too deep at the bottom)", 2, 8, 10, BIG],
+    ["lateral-raise", "Single-arm cable lateral raise (kg per arm)", 3, 12, 15, SMALL, "A"],
+    ["machine-lateral", "Machine lateral raise", 3, 12, 15, SMALL, "B"],
+    ["reverse-pec-deck", "Reverse pec deck", 2, 15, 20, 60],
+    ["single-arm-pushdown", "Single-arm cable pushdown", 2, 10, 12, SMALL, "A"],
+    ["cross-body-tri", "Cross-body cable triceps extension", 2, 10, 12, SMALL, "B"],
   ]},
-  rygg: { short: "Rygg", name: "Inre rygg + biceps", ex: [
+  rygg: { short: "Back", name: "Upper back + biceps", ex: [
     ["tbar-row", "T-bar row", 3, 8, 10, BIG, "A"],
-    ["cs-row", "Bröststödd rodd", 3, 8, 10, BIG, "B"],
-    ["cable-row-close", "Cable row, smalt grepp", 2, 10, 12, 120],
+    ["cs-row", "Chest-supported row", 3, 8, 10, BIG, "B"],
+    ["cable-row-wide", "Seated cable row (wide handle)", 2, 10, 12, 120],
     ["face-pull", "Face pull", 2, 12, 15, 60],
-    ["hammer-curl", "Hammercurl", 3, 10, 12, SMALL, "A"],
-    ["preacher-curl", "Preachercurl", 3, 10, 12, SMALL, "B"],
+    ["hammer-curl", "Hammer curl", 3, 10, 12, SMALL, "A"],
+    ["preacher-curl", "Preacher curl", 3, 10, 12, SMALL, "B"],
   ]},
-  pump: { short: "Pump", name: "Pump (valfri, ingen press)", extra: true, ex: [
+  pump: { short: "Pump", name: "Pump (optional, no pressing)", extra: true, ex: [
     ["pec-deck", "Pec deck", 2, 12, 20, 60],
-    ["lateral-raise", "Kabelsidolyft (en arm, kg per arm)", 2, 12, 20, 60],
-    ["incline-db-curl", "Curl", 2, 12, 20, 60],
-    ["tri-pushdown", "Pushdown", 2, 12, 20, 60],
-    ["reverse-pec-deck", "Omvänd pec deck", 2, 15, 20, 60],
+    ["lateral-raise", "Single-arm cable lateral raise (kg per arm)", 2, 12, 20, 60],
+    ["incline-db-curl", "Dumbbell curl", 2, 12, 20, 60],
+    ["tri-pushdown", "Triceps pushdown", 2, 12, 20, 60],
+    ["reverse-pec-deck", "Reverse pec deck", 2, 15, 20, 60],
   ]},
 };
 const ORDER = Object.keys(PLAN);
 // Names of the old numbered program, so older history and records still read well.
-const OLD_DAYS = { 1: "Push", 2: "Pull", 3: "Ben", 4: "Axlar + armar", 5: "Överkropp", 6: "Pump" };
-const OLD_NAMES = { "flat-chest-press": "Flat bänk / bröstpress", "oh-cable-tri": "Overhead kabeltriceps", "rear-delt-fly": "Rear delt fly", "rdl": "Rumänsk marklyft", "ez-21s": "EZ-bar 21s", "weighted-pullup": "Chins med vikt", "seated-cable-row": "Sittande kabelrodd", "ss-curl": "Curl (superset)", "ss-pushdown": "Pushdown (superset)", "oh-tri-ext": "Overhead triceps", "calf-raise": "Vadpress", "seated-db-press": "Sittande hantelpress" };
+const OLD_DAYS = { 1: "Push", 2: "Pull", 3: "Legs", 4: "Shoulders + arms", 5: "Upper", 6: "Pump" };
+const OLD_NAMES = { "flat-chest-press": "Flat bench / chest press", "oh-cable-tri": "Overhead cable triceps extension", "rear-delt-fly": "Rear delt fly", "rdl": "Romanian deadlift", "ez-21s": "EZ-bar 21s", "weighted-pullup": "Weighted pull-up", "seated-cable-row": "Seated cable row", "ss-curl": "Curl (superset)", "ss-pushdown": "Pushdown (superset)", "oh-tri-ext": "Overhead triceps extension", "calf-raise": "Calf raise", "seated-db-press": "Seated dumbbell press", "cable-row-close": "Close-grip cable row" };
 const passName = (d) => (PLAN[d] ? PLAN[d].name : OLD_DAYS[d] ? `${OLD_DAYS[d]} (gamla planen)` : "Pass");
 const exName = (id) => { for (const k of ORDER) { const e = PLAN[k].ex.find((x) => x[0] === id); if (e) return e[1].replace(/ \(.*\)$/, ""); } return OLD_NAMES[id] || id; };
 
