@@ -323,8 +323,7 @@ const BIG = 150, SMALL = 75, BETWEEN = 120;
 const PLAN = {
   brost: { short: "Chest", name: "Chest + triceps", ex: [
     ["machine-chest-press", "Machine chest press (slightly narrower grip, shoulder blades back)", 3, 6, 8, BIG],
-    ["incline-db-press", "Incline dumbbell press", 2, 8, 10, BIG, "A"],
-    ["incline-smith", "Incline Smith press", 2, 8, 10, BIG, "B"],
+    ["incline-machine-press", "Incline chest press machine (handles at upper chest, elbows ~45°)", 2, 8, 10, BIG],
     ["pec-deck", "Machine fly / pec deck", 2, 10, 12, SMALL, "A"],
     ["cable-fly-low", "Low-to-high cable fly", 2, 10, 12, SMALL, "B"],
     ["lateral-raise", "Single-arm cable lateral raise (kg per arm)", 2, 12, 15, SMALL],
@@ -373,7 +372,7 @@ const PLAN = {
 const ORDER = Object.keys(PLAN);
 // Names of the old numbered program, so older history and records still read well.
 const OLD_DAYS = { 1: "Push", 2: "Pull", 3: "Legs", 4: "Shoulders + arms", 5: "Upper", 6: "Pump" };
-const OLD_NAMES = { "flat-chest-press": "Flat bench / chest press", "oh-cable-tri": "Overhead cable triceps extension", "rear-delt-fly": "Rear delt fly", "rdl": "Romanian deadlift", "ez-21s": "EZ-bar 21s", "weighted-pullup": "Weighted pull-up", "seated-cable-row": "Seated cable row", "ss-curl": "Curl (superset)", "ss-pushdown": "Pushdown (superset)", "oh-tri-ext": "Overhead triceps extension", "calf-raise": "Calf raise", "seated-db-press": "Seated dumbbell press", "cable-row-close": "Close-grip cable row" };
+const OLD_NAMES = { "flat-chest-press": "Flat bench / chest press", "oh-cable-tri": "Overhead cable triceps extension", "rear-delt-fly": "Rear delt fly", "rdl": "Romanian deadlift", "ez-21s": "EZ-bar 21s", "weighted-pullup": "Weighted pull-up", "seated-cable-row": "Seated cable row", "ss-curl": "Curl (superset)", "ss-pushdown": "Pushdown (superset)", "oh-tri-ext": "Overhead triceps extension", "calf-raise": "Calf raise", "seated-db-press": "Seated dumbbell press", "cable-row-close": "Close-grip cable row", "incline-db-press": "Incline dumbbell press", "incline-smith": "Incline Smith press" };
 const passName = (d) => (PLAN[d] ? PLAN[d].name : OLD_DAYS[d] ? `${OLD_DAYS[d]} (gamla planen)` : "Pass");
 const exName = (id) => { for (const k of ORDER) { const e = PLAN[k].ex.find((x) => x[0] === id); if (e) return e[1].replace(/ \(.*\)$/, ""); } return OLD_NAMES[id] || id; };
 
